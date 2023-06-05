@@ -24,6 +24,8 @@ jobs:
         run: |
           sudo apt-get install postgresql-client
           export PGPASSWORD=postgres
+          export PGHOST=$HOST
+          export PGPORT=$PORT
           psql -h postgres -U postgres -d postgres -f ./testing/init.sql
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
