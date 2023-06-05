@@ -1,0 +1,55 @@
+package goqux_test
+
+import (
+	"testing"
+
+	"github.com/roneli/goqux"
+	"github.com/stretchr/testify/assert"
+)
+
+type updateModel struct {
+	IntField int
+}
+
+func TestBuildUpdate(t *testing.T) {
+	tableTests := []struct {
+		name          string
+		dst           interface{}
+		options       []goqux.UpdateOption
+		expectedQuery string
+		expectedArgs  []interface{}
+		expectedError error
+	}{
+		{
+			name:          "simple_update",
+			dst:           updateModel{IntField: 5},
+			expectedQuery: `UPDATE "update_models" SET "int_field"=$1`,
+			expectedArgs:  []interface{}{int64(5)},
+			expectedError: nil,
+		},
+		{
+			name:          "update_with_filters",
+			dst:           updateModel{IntField: 5},
+			options:       []goqux.UpdateOption{goqux.WithUpdateFilters(goqux.Column("update_models", "int_field").Eq(1))},
+			expectedQuery: `UPDATE "update_models" SET "int_field"=$1 WHERE ("update_models"."int_field" = $2)`,
+			expectedArgs:  []interface{}{int64(5), int64(1)},
+		},
+		{
+			name:          "update_with_returning",
+			dst:           updateModel{IntField: 5},
+			options:       []goqux.UpdateOption{goqux.WithUpdateReturningAll()},
+			expectedQuery: `UPDATE "update_models" SET "int_field"=$1 RETURNING *`,
+			expectedArgs:  []interface{}{int64(5)},
+		},
+	}
+	for _, tt := range tableTests {
+		t.Run(tt.name, func(t *testing.T) {
+			query, args, err := goqux.BuildUpdate("update_models", tt.dst, tt.options...)
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, tt.expectedError, err)
+			}
+			assert.Equal(t, tt.expectedQuery, query)
+			assert.Equal(t, tt.expectedArgs, args)
+		})
+	}
+}

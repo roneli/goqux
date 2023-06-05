@@ -1,0 +1,35 @@
+name: tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unitests:
+    runs-on: 'ubuntu-latest'
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - name: Run init.sql script
+        run: |
+          sudo apt-get install postgresql-client
+          export PGPASSWORD=postgres
+          psql -h localhost -U postgres -d public -f ./testing/init.sql
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - run: go mod download
+      - name: Test
+        run: go test -v ./...
