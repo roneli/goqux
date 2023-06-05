@@ -15,7 +15,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DATABASE: public
+          POSTGRES_DATABASE: postgres
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -24,7 +24,7 @@ jobs:
         run: |
           sudo apt-get install postgresql-client
           export PGPASSWORD=postgres
-          psql -h localhost -U postgres -d public -f ./testing/init.sql
+          psql -h localhost -U postgres -d postgres -f ./testing/init.sql
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
