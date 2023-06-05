@@ -20,6 +20,11 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
+      - name: Run init.sql script
+        run: |
+          sudo apt-get install postgresql-client
+          export PGPASSWORD=postgres
+          psql -h postgres -U postgres -d postgres -f ./testing/init.sql
       - name: Set up Go 1.x
         uses: actions/setup-go@v2
         with:
