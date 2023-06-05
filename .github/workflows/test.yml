@@ -21,7 +21,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - name: List repository contents
-        run: find $GITHUB_WORKSPACE -name "init.sql"
+        run: ls $GITHUB_WORKSPACE/testing
       - name: Run init.sql script
         run: |
           sudo apt-get install postgresql-client
