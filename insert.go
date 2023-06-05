@@ -19,6 +19,16 @@ func WithInsertReturningAll() InsertOption {
 	}
 }
 
+func WithInsertReturning(columns ...string) InsertOption {
+	return func(table exp.IdentifierExpression, s *goqu.InsertDataset) *goqu.InsertDataset {
+		cols := make([]any, 0, len(columns))
+		for _, c := range columns {
+			cols = append(cols, table.Col(c))
+		}
+		return s.Returning(cols...)
+	}
+}
+
 func BuildInsert(tableName string, values []any, options ...InsertOption) (string, []any, error) {
 	table := goqu.T(tableName)
 	q := goqu.Insert(table).WithDialect(defaultDialect)

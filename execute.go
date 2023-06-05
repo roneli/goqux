@@ -74,11 +74,14 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 			PageSize: 10,
 		}
 	}
+	originalOptions := options
 	return NewPaginator(func(p *Paginator[T]) ([]T, error) {
 		if paginationOptions.KeySet != nil {
-			options = append(options, WithKeySet(paginationOptions.KeySet, p.values))
+			//nolint:gocritic
+			options = append(originalOptions, WithKeySet(paginationOptions.KeySet, p.values))
 		} else {
-			options = append(options, WithSelectOffset(p.offset))
+			//nolint:gocritic
+			options = append(originalOptions, WithSelectOffset(p.offset))
 		}
 		results, err := Select[T](ctx, querier, tableName, append(options, WithSelectLimit(paginationOptions.PageSize))...)
 		if err != nil {
@@ -86,14 +89,15 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 		}
 		if len(results) == 0 || len(results) < int(paginationOptions.PageSize) {
 			p.hasNext = false
+			return results, nil
 		}
 		if len(paginationOptions.KeySet) > 0 {
 			var values = make([]any, len(results))
 			lastResult := results[len(results)-1]
-			reflect.ValueOf(lastResult)
 			for i, c := range paginationOptions.KeySet {
 				values[i] = reflect.ValueOf(lastResult).FieldByName(c).Interface()
 			}
+			p.values = values
 		} else {
 			p.offset += paginationOptions.PageSize
 		}
@@ -126,18 +130,18 @@ func Update[T any](ctx context.Context, querier pgxscan.Querier, tableName strin
 }
 
 func Insert[T any](ctx context.Context, querier pgxscan.Querier, tableName string, insertValue any, options ...InsertOption) (*T, error) {
-	var result *T
+	var result T
 	query, args, err := BuildInsert(tableName, []any{insertValue}, options...)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 	if err := pgxscan.Get(ctx, querier, &result, query, args...); err != nil {
 		if pgxscan.NotFound(err) {
-			return result, nil
+			return nil, nil
 		}
-		return result, fmt.Errorf("goqux: failed to insert: %w", err)
+		return nil, fmt.Errorf("goqux: failed to insert: %w", err)
 	}
-	return result, nil
+	return &result, nil
 }
 
 func InsertMany[T any](ctx context.Context, querier pgxscan.Querier, tableName string, insertValues []any, options ...InsertOption) ([]T, error) {

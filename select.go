@@ -3,6 +3,7 @@ package goqux
 import (
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
+	"github.com/iancoleman/strcase"
 )
 
 type SelectOption func(_ exp.IdentifierExpression, s *goqu.SelectDataset) *goqu.SelectDataset
@@ -37,7 +38,7 @@ func WithKeySet(columns []string, values []any) SelectOption {
 			return s
 		}
 		for i, c := range columns {
-			s = s.Where(table.Col(c).Gt(values[i])).Order(table.Col(c).Asc())
+			s = s.Where(table.Col(strcase.ToSnake(c)).Gt(values[i])).Order(table.Col(strcase.ToSnake(c)).Asc())
 		}
 		// Make sure to clear offset with KeySet pagination
 		return s.ClearOffset()
