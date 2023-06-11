@@ -20,11 +20,12 @@ designed to simplify the process of building CRUD queries, implementing paginati
 ## Why?
 
 There is much debate in Golang about the best way to handle database queries. Some prefer ORM libraries like GORM,
-while others prefer to use query builders like [goqu](https://github.com/doug-martin/goqu), and of course, there are those who prefer to write raw SQL queries.
+while others prefer to use query builders like [goqu](https://github.com/doug-martin/goqu), and of course, 
+there are those who prefer to write raw SQL queries.
 
-Personally, I usually like to use query builders as they offer a good balance, and use raw queries when it's very complex query.
+Personally, I usually like to use query builders as they offer a good balance, although when it's a very complex query use raw SQL instead.
 
-I wrote GoquX because I found myself writing the same code over and over again for simple queries,  and I wanted to simplify 
+I wrote GoquX because I found myself writing the same code over and over again for simple queries, and I wanted to simplify 
 the process of building [CRUD](#query-building-helpers) queries, implementing [pagination](#pagination), and [struct scanning](#select).
 
 GoquX is not a replacement for [goqu](https://github.com/doug-martin/goqu), but rather a lightweight wrapper that simplifies the process of using it.
@@ -126,7 +127,21 @@ type User struct {
     UpdatedAt time.Time `goqux:"now_utc"`
     FieldToSkip string  `goqux:"skip_insert"`
 }
-sql, args, err := goqux.BuildDelete("table_to_delete", goqux.WithDeleteFilters(goqux.Column("delete_models", "int_field").Eq(1), goqu.WithReturningAll()))
+sql, args, err := goqux.BuildDelete("table_to_delete", goqux.WithDeleteFilters(goqux.Column("delete_models", "id").Eq(1), goqu.WithReturningAll()))
+```
+
+### Update Builder
+
+```go
+type User struct {
+    ID        int64     `db:"id"`
+    Name      string    `db:"name"`
+    Email     string    `db:"email"`
+    CreatedAt time.Time `goqux:"now,skip_update"`
+    UpdatedAt time.Time `goqux:"now_utc"`
+}
+// will update only the name field for the user with id 1
+sql, args, err := goqux.BuildUpdate("table_to_update", &User{Name: "goqux"}, goqux.WithUpdateFilters(goqux.Column("table_to_update", "id").Eq(1), goqu.WithReturningAll()))
 ```
 
 ## Select/Insert/Update/Delete Executions
@@ -152,7 +167,12 @@ _, err := goqux.Insert[User](ctx, conn, "users", tt.value)
 
 If we want to return the inserted row we can use the `goqux.WithInsertReturning` option.
 ```go
-model, err := goqux.Insert[User](ctx, conn, "users", tt.value, goqux.WithInsertDialect("postgres"), goqux.WithInsertReturning("username", "password", "email"))
+model, err := goqux.Insert[User](ctx, conn, "users", value, goqux.WithInsertDialect("postgres"), goqux.WithInsertReturning("username", "password", "email"))
+```
+
+### Update
+```go
+_, err := goqux.Update[User](ctx, conn, "users", value, goqux.WithUpdateFilters(goqux.Column("users", "id").Eq(1)))
 ```
 
 
