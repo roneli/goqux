@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
@@ -43,7 +44,7 @@ func (t SQLValuer) Value() (driver.Value, error) {
 			return nil, fmt.Errorf("failed to convert value: %w", err)
 		}
 		return value, nil
-	case map[string]interface{}, []map[string]interface{}, []interface{}:
+	case map[string]interface{}, []map[string]interface{}, []interface{}, map[string]string:
 		return json.Marshal(t.V)
 	case uuid.UUID:
 		if t.V == uuid.Nil {
@@ -51,6 +52,10 @@ func (t SQLValuer) Value() (driver.Value, error) {
 		}
 		return t.V, nil
 	default:
+		// if we didn't find a common type use reflection to guess if the type is of map
+		if reflect.TypeOf(t.V).Kind() == reflect.Map {
+			return json.Marshal(t.V)
+		}
 		return t.V, nil
 	}
 }
