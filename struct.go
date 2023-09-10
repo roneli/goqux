@@ -24,12 +24,16 @@ const (
 	defaultNowUtc = "now_utc"
 )
 
-func encodeValues(v any, skipType string) map[string]SQLValuer {
+func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLValuer {
 	t := reflect.ValueOf(v)
 	fields := reflect.VisibleFields(t.Type())
 	values := make(map[string]SQLValuer)
 	for _, f := range fields {
 		if !f.IsExported() || strings.Contains(f.Tag.Get(tagName), skipType) {
+			continue
+		}
+		value := t.FieldByName(f.Name)
+		if skipZeroValues && reflect.Zero(f.Type).Equal(value) {
 			continue
 		}
 		switch {
@@ -38,7 +42,7 @@ func encodeValues(v any, skipType string) map[string]SQLValuer {
 		case strings.Contains(f.Tag.Get(tagName), defaultNow):
 			values[strcase.ToSnake(f.Name)] = SQLValuer{time.Now()}
 		default:
-			values[strcase.ToSnake(f.Name)] = SQLValuer{t.FieldByName(f.Name).Interface()}
+			values[strcase.ToSnake(f.Name)] = SQLValuer{value.Interface()}
 		}
 	}
 	return values

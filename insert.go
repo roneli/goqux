@@ -37,7 +37,7 @@ func BuildInsert(tableName string, values []any, options ...InsertOption) (strin
 	}
 	encodedValues := make([]map[string]SQLValuer, len(values))
 	for i, value := range values {
-		encodedValues[i] = encodeValues(value, skipInsert)
+		encodedValues[i] = encodeValues(value, skipInsert, false)
 	}
 	return q.Rows(encodedValues).ToSQL()
 }

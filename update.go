@@ -1,6 +1,8 @@
 package goqux
 
 import (
+	"errors"
+
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
 )
@@ -31,6 +33,10 @@ func BuildUpdate(tableName string, value any, options ...UpdateOption) (string, 
 	for _, o := range options {
 		q = o(table, q)
 	}
-	q = q.Set(encodeValues(value, skipUpdate))
+	values := encodeValues(value, skipUpdate, true)
+	if len(values) == 0 {
+		return "", nil, errors.New("no values to update")
+	}
+	q = q.Set(values)
 	return q.ToSQL()
 }

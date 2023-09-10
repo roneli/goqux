@@ -1,6 +1,7 @@
 package goqux_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/roneli/goqux"
@@ -41,12 +42,19 @@ func TestBuildUpdate(t *testing.T) {
 			expectedQuery: `UPDATE "update_models" SET "int_field"=$1 RETURNING *`,
 			expectedArgs:  []interface{}{int64(5)},
 		},
+		{
+			name:          "update_with_zero_values",
+			dst:           updateModel{IntField: 0},
+			expectedQuery: ``,
+			expectedArgs:  nil,
+			expectedError: errors.New("no values to update"),
+		},
 	}
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
 			query, args, err := goqux.BuildUpdate("update_models", tt.dst, tt.options...)
 			if tt.expectedError != nil {
-				assert.ErrorIs(t, tt.expectedError, err)
+				assert.Equal(t, tt.expectedError, err)
 			}
 			assert.Equal(t, tt.expectedQuery, query)
 			assert.Equal(t, tt.expectedArgs, args)
