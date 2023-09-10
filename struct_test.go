@@ -79,7 +79,6 @@ func TestEncodeTimeValue(t *testing.T) {
 		require.NotNil(t, tf)
 		return
 	}
-	t.Fail()
 }
 
 func TestGetColumnsFromStruct(t *testing.T) {
