@@ -86,7 +86,8 @@ func TestGetColumnsFromStruct(t *testing.T) {
 		IntField    int
 		unexported  bool
 		FieldToSkip int `goqux:"skip_select"`
+		DbOsField   int `db:"db_field"`
 	}
 	columns := getColumnsFromStruct(goqu.T("table"), selectModel{}, skipSelect)
-	assert.Equal(t, []interface{}{goqu.T("table").Col("int_field")}, columns)
+	assert.Equal(t, []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("db_field")}, columns)
 }

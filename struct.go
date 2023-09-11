@@ -13,6 +13,8 @@ import (
 const (
 	// TagName goqux tag field query building
 	tagName = "goqux"
+	// TagName of db to change column field
+	tagNameDb = "db"
 	// skip is field that allows skipping the column
 	skipSelect          = "skip_select"
 	skipUpdate          = "skip_update"
@@ -59,7 +61,12 @@ func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string
 		if !f.IsExported() || strings.Contains(f.Tag.Get(tagName), skipType) {
 			continue
 		}
-		cols = append(cols, table.Col(strcase.ToSnake(f.Name)))
+		if dbTag := f.Tag.Get(tagNameDb); dbTag != "" {
+			cols = append(cols, table.Col(dbTag))
+			continue
+		} else {
+			cols = append(cols, table.Col(strcase.ToSnake(f.Name)))
+		}
 	}
 	return cols
 }
