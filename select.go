@@ -59,7 +59,11 @@ func WithSelectStar() SelectOption {
 
 func BuildSelect[T any](tableName string, dst T, options ...SelectOption) (string, []any, error) {
 	table := goqu.T(tableName)
-	selectQuery := goqu.Select(getColumnsFromStruct(table, dst, skipSelect)...).From(table).WithDialect(defaultDialect)
+	columns := getColumnsFromStruct(table, dst, skipSelect)
+	if len(columns) == 0 {
+		columns = append(columns, goqu.Star())
+	}
+	selectQuery := goqu.Select(columns...).From(table).WithDialect(defaultDialect)
 	for _, o := range options {
 		selectQuery = o(table, selectQuery)
 	}

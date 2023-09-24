@@ -28,7 +28,34 @@ const (
 
 func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLValuer {
 	t := reflect.ValueOf(v)
-	fields := reflect.VisibleFields(t.Type())
+	switch t.Kind() {
+	case reflect.Struct:
+		return encodeStructValue(t, reflect.VisibleFields(t.Type()), skipType, skipZeroValues)
+	case reflect.Ptr:
+		return encodeStructValue(t.Elem(), reflect.VisibleFields(t.Elem().Type()), skipType, skipZeroValues)
+	case reflect.Map:
+		return encodeMapValue(t, t.MapKeys())
+	default:
+		return nil
+	}
+}
+
+func encodeMapValue(value reflect.Value, keys []reflect.Value) map[string]SQLValuer {
+	values := make(map[string]SQLValuer)
+	for _, k := range keys {
+		if k.Kind() != reflect.String {
+			continue
+		}
+		value := value.MapIndex(k)
+		if !value.IsValid() {
+			continue
+		}
+		values[k.String()] = SQLValuer{value.Interface()}
+	}
+	return values
+}
+
+func encodeStructValue(t reflect.Value, fields []reflect.StructField, skipType string, skipZeroValues bool) map[string]SQLValuer {
 	values := make(map[string]SQLValuer)
 	for _, f := range fields {
 		if !f.IsExported() || strings.Contains(f.Tag.Get(tagName), skipType) {
@@ -54,6 +81,9 @@ func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string
 	t := reflect.TypeOf(s)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
+	}
+	if t.Kind() != reflect.Struct {
+		return nil
 	}
 	fields := reflect.VisibleFields(t)
 	var cols = make([]any, 0)
