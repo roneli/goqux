@@ -58,6 +58,33 @@ func TestEncodeValues(t *testing.T) {
 			skipFlag:       skipInsert,
 			skipZeroValues: true,
 		},
+		{
+			name: "encode_map_values",
+			model: struct {
+				IntField   int
+				FloatField float64
+				unexported bool
+				MapValue   map[string]any `goqux:"skip_compare"`
+			}{MapValue: map[string]any{"type": "map"}},
+			values:         map[string]SQLValuer{"map_value": {map[string]any{"type": "map"}}},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_empty_struct",
+			model: struct {
+				IntField    int
+				FloatField  float64
+				unexported  bool
+				EmptyStruct struct {
+					Type  string
+					Value string
+				}
+			}{},
+			values:         map[string]SQLValuer{},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
 	}
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
