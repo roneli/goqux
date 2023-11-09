@@ -36,11 +36,8 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 			continue
 		}
 		value := t.FieldByName(f.Name)
-		if value.IsZero() {
-			continue
-		}
 		if !strings.Contains(f.Tag.Get(tagName), skipCompare) {
-			if skipZeroValues && reflect.Zero(f.Type).Equal(value) {
+			if value.IsZero() || skipZeroValues && reflect.Zero(f.Type).Equal(value) {
 				continue
 			}
 		}
