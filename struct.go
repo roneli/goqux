@@ -36,6 +36,7 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 			continue
 		}
 		value := t.FieldByName(f.Name)
+		// We want to support the case when there is no value in one of the fields
 		if !strings.Contains(f.Tag.Get(tagName), skipCompare) {
 			if value.IsZero() || skipZeroValues && reflect.Zero(f.Type).Equal(value) {
 				continue
