@@ -20,7 +20,6 @@ const (
 	skipUpdate          = "skip_update"
 	skipInsert          = "skip_insert"
 	skipReturningDelete = "skip_delete"
-	skipCompare         = "skip_compare"
 	// if the field is of type time.Time it will inject time.Now
 	defaultNow = "now"
 	// Same as default now but will inject time.Now().UTC()
@@ -37,10 +36,8 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 		}
 		value := t.FieldByName(f.Name)
 		// We want to support the case when there is no value in one of the fields
-		if !strings.Contains(f.Tag.Get(tagName), skipCompare) {
-			if skipZeroValues && value.IsZero() {
-				continue
-			}
+		if skipZeroValues && value.IsZero() {
+			continue
 		}
 		switch {
 		case strings.Contains(f.Tag.Get(tagName), defaultNowUtc):
