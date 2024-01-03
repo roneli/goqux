@@ -272,3 +272,23 @@ func TestSelectPagination(t *testing.T) {
 		})
 	}
 }
+
+func TestStopOnPaginations(t *testing.T) {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, testPostgresURI)
+	require.Nil(t, err)
+	defer func() {
+		err := conn.Close(context.Background())
+		require.Nil(t, err)
+	}()
+	paginatorMock := goqux.NewPaginator(func(p *goqux.Paginator[User]) ([]User, bool, error) {
+		return []User{}, true, nil
+	})
+	countPages := 0
+	for paginatorMock.HasMorePages() {
+		_, err := paginatorMock.NextPage()
+		require.Nil(t, err)
+		countPages++
+	}
+	require.Equal(t, 1, countPages)
+}
