@@ -74,7 +74,16 @@ for paginator.HasMorePages() {
     ...
 }
 ```
+### Test Pagination Queries
 
+```go
+paginatorMock := goqux.NewPaginator(func(p *goqux.Paginator[T]) ([]T, bool, error) {
+	stopClause := true
+	var items []T{}
+	return items, stopClause, nil
+})
+EXPECT().ListItems().Return(paginatorMock, ...)
+```
 
 ## Query building Helpers
 
