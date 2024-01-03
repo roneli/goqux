@@ -17,7 +17,8 @@ type PaginationOptions struct {
 	KeySet []string
 }
 
-type PageIterator[T any] func(p *Paginator[T]) ([]T, error)
+// PageIterator is a function that returns a page of results and a boolean indicating if there should be a next page or to stop iterating.
+type PageIterator[T any] func(p *Paginator[T]) ([]T, bool, error)
 
 // Paginator allows to paginate over result set of T
 type Paginator[T any] struct {
@@ -25,6 +26,7 @@ type Paginator[T any] struct {
 	iterator PageIterator[T]
 	offset   uint
 	values   []any
+	stop     bool
 }
 
 func NewPaginator[T any](iterator PageIterator[T]) *Paginator[T] {
@@ -33,15 +35,20 @@ func NewPaginator[T any](iterator PageIterator[T]) *Paginator[T] {
 		iterator: iterator,
 		offset:   0,
 		values:   nil,
+		stop:     false,
 	}
 }
 
 func (p *Paginator[T]) HasMorePages() bool {
-	return p.hasNext
+	return p.hasNext && !p.stop
 }
 
 func (p *Paginator[T]) NextPage() ([]T, error) {
-	return p.iterator(p)
+	data, shouldStop, err := p.iterator(p)
+	if shouldStop {
+		p.stop = true
+	}
+	return data, err
 }
 
 func Select[T any](ctx context.Context, querier pgxscan.Querier, tableName string, options ...SelectOption) ([]T, error) {
@@ -75,7 +82,7 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 		}
 	}
 	originalOptions := options
-	return NewPaginator(func(p *Paginator[T]) ([]T, error) {
+	return NewPaginator(func(p *Paginator[T]) ([]T, bool, error) {
 		if paginationOptions.KeySet != nil {
 			//nolint:gocritic
 			options = append(originalOptions, WithKeySet(paginationOptions.KeySet, p.values))
@@ -85,11 +92,11 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 		}
 		results, err := Select[T](ctx, querier, tableName, append(options, WithSelectLimit(paginationOptions.PageSize))...)
 		if err != nil {
-			return nil, fmt.Errorf("goqux: failed to select: %w", err)
+			return nil, false, fmt.Errorf("goqux: failed to select: %w", err)
 		}
 		if len(results) == 0 || len(results) < int(paginationOptions.PageSize) {
 			p.hasNext = false
-			return results, nil
+			return results, false, nil
 		}
 		if len(paginationOptions.KeySet) > 0 {
 			var values = make([]any, len(results))
@@ -101,7 +108,7 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 		} else {
 			p.offset += paginationOptions.PageSize
 		}
-		return results, nil
+		return results, false, nil
 	}), nil
 }
 
