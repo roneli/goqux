@@ -10,6 +10,7 @@ import (
 
 type updateModel struct {
 	IntField int
+	DbTag    string `db:"another_col_name"`
 }
 
 func TestBuildUpdate(t *testing.T) {
@@ -23,9 +24,9 @@ func TestBuildUpdate(t *testing.T) {
 	}{
 		{
 			name:          "simple_update",
-			dst:           updateModel{IntField: 5},
-			expectedQuery: `UPDATE "update_models" SET "int_field"=$1`,
-			expectedArgs:  []interface{}{int64(5)},
+			dst:           updateModel{IntField: 5, DbTag: "test"},
+			expectedQuery: `UPDATE "update_models" SET "another_col_name"=$1,"int_field"=$2`,
+			expectedArgs:  []interface{}{"test", int64(5)},
 			expectedError: nil,
 		},
 		{

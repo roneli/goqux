@@ -39,13 +39,19 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 		if skipZeroValues && value.IsZero() {
 			continue
 		}
+
+		columnName := strcase.ToSnake(f.Name)
+		if dbTag := f.Tag.Get(tagNameDb); dbTag != "" {
+			columnName = dbTag
+		}
+
 		switch {
 		case strings.Contains(f.Tag.Get(tagName), defaultNowUtc):
-			values[strcase.ToSnake(f.Name)] = SQLValuer{time.Now().UTC()}
+			values[columnName] = SQLValuer{time.Now().UTC()}
 		case strings.Contains(f.Tag.Get(tagName), defaultNow):
-			values[strcase.ToSnake(f.Name)] = SQLValuer{time.Now()}
+			values[columnName] = SQLValuer{time.Now()}
 		default:
-			values[strcase.ToSnake(f.Name)] = SQLValuer{value.Interface()}
+			values[columnName] = SQLValuer{value.Interface()}
 		}
 	}
 	return values
