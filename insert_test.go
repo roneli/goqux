@@ -10,7 +10,8 @@ import (
 type insertModel struct {
 	IntField   int64 `db:"int_field"`
 	OtherValue string
-	SkipInsert bool `goqux:"skip_insert"`
+	SkipInsert bool   `goqux:"skip_insert"`
+	DbTag      string `db:"another_col_name"`
 }
 
 func TestBuildInsert(t *testing.T) {
@@ -25,8 +26,8 @@ func TestBuildInsert(t *testing.T) {
 		{
 			name:          "simple_insert",
 			values:        []any{insertModel{IntField: 5}},
-			expectedQuery: `INSERT INTO "insert_models" ("int_field", "other_value") VALUES ($1, $2)`,
-			expectedArgs:  []interface{}{int64(5), ""},
+			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "int_field", "other_value") VALUES ($1, $2, $3)`,
+			expectedArgs:  []interface{}{"", int64(5), ""},
 			expectedError: nil,
 		},
 		{
@@ -35,8 +36,8 @@ func TestBuildInsert(t *testing.T) {
 				insertModel{IntField: 5},
 				insertModel{IntField: 6},
 			},
-			expectedQuery: `INSERT INTO "insert_models" ("int_field", "other_value") VALUES ($1, $2), ($3, $4)`,
-			expectedArgs:  []interface{}{int64(5), "", int64(6), ""},
+			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "int_field", "other_value") VALUES ($1, $2, $3), ($4, $5, $6)`,
+			expectedArgs:  []interface{}{"", int64(5), "", "", int64(6), ""},
 			expectedError: nil,
 		},
 		{
@@ -45,8 +46,8 @@ func TestBuildInsert(t *testing.T) {
 				insertModel{IntField: 5},
 			},
 			opts:          []goqux.InsertOption{goqux.WithInsertReturningAll()},
-			expectedQuery: `INSERT INTO "insert_models" ("int_field", "other_value") VALUES ($1, $2) RETURNING *`,
-			expectedArgs:  []interface{}{int64(5), ""},
+			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "int_field", "other_value") VALUES ($1, $2, $3) RETURNING *`,
+			expectedArgs:  []interface{}{"", int64(5), ""},
 		},
 	}
 	for _, tt := range testTables {
