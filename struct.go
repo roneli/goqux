@@ -24,6 +24,8 @@ const (
 	defaultNow = "now"
 	// Same as default now but will inject time.Now().UTC()
 	defaultNowUtc = "now_utc"
+	// omitempty will skip the field if it is zero value
+	omitEmpty = ",omitempty"
 )
 
 func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLValuer {
@@ -42,6 +44,12 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 
 		columnName := strcase.ToSnake(f.Name)
 		if dbTag := f.Tag.Get(tagNameDb); dbTag != "" {
+			if strings.Contains(dbTag, omitEmpty) {
+				if value.IsZero() {
+					continue
+				}
+				dbTag = strings.ReplaceAll(dbTag, omitEmpty, "")
+			}
 			columnName = dbTag
 		}
 
