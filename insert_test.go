@@ -8,10 +8,11 @@ import (
 )
 
 type insertModel struct {
-	IntField   int64 `db:"int_field"`
-	OtherValue string
-	SkipInsert bool   `goqux:"skip_insert"`
-	DbTag      string `db:"another_col_name"`
+	IntField       int64 `db:"int_field"`
+	OtherValue     string
+	SkipInsert     bool   `goqux:"skip_insert"`
+	DbTag          string `db:"another_col_name"`
+	DbTagOmitEmpty string `db:"another_col_name_omit,omitempty"`
 }
 
 func TestBuildInsert(t *testing.T) {
@@ -25,6 +26,13 @@ func TestBuildInsert(t *testing.T) {
 	}{
 		{
 			name:          "simple_insert",
+			values:        []any{insertModel{IntField: 5, DbTagOmitEmpty: "test"}},
+			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "another_col_name_omit", "int_field", "other_value") VALUES ($1, $2, $3, $4)`,
+			expectedArgs:  []interface{}{"", "test", int64(5), ""},
+			expectedError: nil,
+		},
+		{
+			name:          "simple_insert_ompitempty",
 			values:        []any{insertModel{IntField: 5}},
 			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "int_field", "other_value") VALUES ($1, $2, $3)`,
 			expectedArgs:  []interface{}{"", int64(5), ""},
