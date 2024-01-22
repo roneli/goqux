@@ -48,7 +48,7 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 				if value.IsZero() {
 					continue
 				}
-				dbTag = strings.Replace(dbTag, omitEmpty, "", -1)
+				dbTag = strings.ReplaceAll(dbTag, omitEmpty, "")
 			}
 			columnName = dbTag
 		}
