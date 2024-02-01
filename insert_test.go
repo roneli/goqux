@@ -57,6 +57,16 @@ func TestBuildInsert(t *testing.T) {
 			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "int_field", "other_value") VALUES ($1, $2, $3) RETURNING *`,
 			expectedArgs:  []interface{}{"", int64(5), ""},
 		},
+		{
+			name: "insert_with_not_prepared",
+			values: []any{
+				insertModel{IntField: 5},
+				insertModel{IntField: 6},
+			},
+			opts:          []goqux.InsertOption{goqux.WithNotPrepend()},
+			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "int_field", "other_value") VALUES ('', 5, ''), ('', 6, '')`,
+			expectedArgs:  []interface{}{},
+		},
 	}
 	for _, tt := range testTables {
 		t.Run(tt.name, func(t *testing.T) {
