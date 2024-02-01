@@ -58,12 +58,12 @@ func TestBuildInsert(t *testing.T) {
 			expectedArgs:  []interface{}{"", int64(5), ""},
 		},
 		{
-			name: "insert_with_not_prepared",
+			name: "insert_with_insert_not_prepared",
 			values: []any{
 				insertModel{IntField: 5},
 				insertModel{IntField: 6},
 			},
-			opts:          []goqux.InsertOption{goqux.WithNotPrepend()},
+			opts:          []goqux.InsertOption{goqux.WithInsertNotPrepared()},
 			expectedQuery: `INSERT INTO "insert_models" ("another_col_name", "int_field", "other_value") VALUES ('', 5, ''), ('', 6, '')`,
 			expectedArgs:  []interface{}{},
 		},

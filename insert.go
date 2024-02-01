@@ -29,7 +29,7 @@ func WithInsertReturning(columns ...string) InsertOption {
 	}
 }
 
-func WithNotPrepend() InsertOption {
+func WithInsertNotPrepared() InsertOption {
 	return func(table exp.IdentifierExpression, s *goqu.InsertDataset) *goqu.InsertDataset {
 		return s.Prepared(false)
 	}
