@@ -82,6 +82,24 @@ func TestEncodeValues(t *testing.T) {
 			skipFlag:       skipInsert,
 			skipZeroValues: true,
 		},
+		{
+			name: "encode_omitempty_nonempty",
+			model: struct {
+				IntField int `db:"int_field,omitempty"`
+			}{IntField: 3},
+			values:         map[string]SQLValuer{"int_field": {3}},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_omitempty_empty",
+			model: struct {
+				IntField int `db:"int_field,omitempty"`
+			}{IntField: 0},
+			values:         map[string]SQLValuer{},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
 	}
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -106,12 +124,34 @@ func TestEncodeTimeValue(t *testing.T) {
 }
 
 func TestGetColumnsFromStruct(t *testing.T) {
-	type selectModel struct {
-		IntField    int
-		unexported  bool
-		FieldToSkip int `goqux:"skip_select"`
-		DbOsField   int `db:"db_field"`
+	tableTests := []struct {
+		name     string
+		model    interface{}
+		expected []interface{}
+	}{
+		{
+			name: "get_columns_from_struct",
+			model: struct {
+				IntField    int
+				unexported  bool
+				FieldToSkip int `goqux:"skip_select"`
+				DbOsField   int `db:"db_field"`
+			}{},
+			expected: []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("db_field")},
+		},
+		{
+			name: "get_columns_from_struct_with_omitempty",
+			model: struct {
+				IntField    int `db:"int_field,omitempty"` // should not be skipped
+				StringField string
+			}{},
+			expected: []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("string_field")},
+		},
 	}
-	columns := getColumnsFromStruct(goqu.T("table"), selectModel{}, skipSelect)
-	assert.Equal(t, []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("db_field")}, columns)
+	for _, tt := range tableTests {
+		t.Run(tt.name, func(t *testing.T) {
+			columns := getColumnsFromStruct(goqu.T("table"), tt.model, skipSelect)
+			assert.Equal(t, tt.expected, columns)
+		})
+	}
 }

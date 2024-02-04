@@ -48,7 +48,7 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 				if value.IsZero() {
 					continue
 				}
-				dbTag = strings.ReplaceAll(dbTag, omitEmpty, "")
+				dbTag = cleanDbTag(dbTag)
 			}
 			columnName = dbTag
 		}
@@ -77,11 +77,19 @@ func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string
 			continue
 		}
 		if dbTag := f.Tag.Get(tagNameDb); dbTag != "" {
-			cols = append(cols, table.Col(dbTag))
+			cols = append(cols, table.Col(cleanDbTag(dbTag)))
 			continue
 		} else {
 			cols = append(cols, table.Col(strcase.ToSnake(f.Name)))
 		}
 	}
 	return cols
+}
+
+func cleanDbTag(tag string) string {
+	if strings.Contains(tag, omitEmpty) {
+		tag = strings.ReplaceAll(tag, omitEmpty, "")
+	}
+
+	return tag
 }
