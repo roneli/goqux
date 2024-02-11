@@ -55,6 +55,17 @@ func (t SQLValuer) Value() (driver.Value, error) {
 		// if we didn't find a common type use reflection to guess if the type is of map
 		if reflect.TypeOf(t.V).Kind() == reflect.Map {
 			return json.Marshal(t.V)
+		} else if reflect.TypeOf(t.V).Kind() == reflect.Pointer {
+			if reflect.ValueOf(t.V).IsZero() {
+				return nil, nil
+			}
+			s := reflect.ValueOf(t.V).Elem().Interface()
+			if valuer, ok := s.(driver.Valuer); ok {
+				return valuer.Value()
+			}
+		}
+		if valuer, ok := t.V.(driver.Valuer); ok {
+			return valuer.Value()
 		}
 		return t.V, nil
 	}

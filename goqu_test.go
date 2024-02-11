@@ -1,10 +1,26 @@
 package goqux
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type structField struct {
+	V map[string]interface{} `json:"v"`
+}
+
+func (s structField) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
+type structValuerArray []structField
+
+func (s structValuerArray) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
 
 func TestSQLValuer_Value(t *testing.T) {
 	tableTestValues := []struct {
@@ -64,6 +80,61 @@ func TestSQLValuer_Value(t *testing.T) {
 				"test",
 			},
 			expected: "{\"test\"}",
+		},
+		{
+			name: "struct_implements_valuer",
+			value: structField{
+				V: map[string]interface{}{
+					"test": "test",
+				},
+			},
+			expected: []byte(`{"v":{"test":"test"}}`),
+		},
+		{
+			name: "valuer_pointer",
+			value: &structField{
+				V: map[string]interface{}{
+					"test": "test",
+				},
+			},
+			expected: []byte(`{"v":{"test":"test"}}`),
+		},
+		{
+			name:     "valuer_nil_pointer",
+			value:    (*structField)(nil),
+			expected: nil,
+		},
+		{
+			name:     "empty_struct",
+			value:    structField{},
+			expected: []byte(`{"v":null}`),
+		},
+		{
+			name:     "empty_struct_pointer",
+			value:    &structField{},
+			expected: []byte(`{"v":null}`),
+		},
+		{
+			name: "valuer_array_struct",
+			value: structValuerArray{
+				{
+					V: map[string]interface{}{
+						"test": "test",
+					},
+				},
+			},
+			expected: []byte(`[{"v":{"test":"test"}}]`),
+		},
+		{
+			name: "valuer_array_pointer",
+			value: &structValuerArray{
+				{
+					V: map[string]interface{}{
+						"test": "test",
+					},
+				},
+			},
+			expected: []byte(`[{"v":{"test":"test"}}]`),
 		},
 	}
 	for _, tt := range tableTestValues {
