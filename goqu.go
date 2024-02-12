@@ -37,6 +37,12 @@ type SQLValuer struct {
 
 // Value converts the given value to the correct drive.Value.
 func (t SQLValuer) Value() (driver.Value, error) {
+	if valuer, ok := t.V.(driver.Valuer); ok {
+		if reflect.TypeOf(t.V).Kind() == reflect.Pointer && reflect.ValueOf(t.V).IsZero() {
+			return nil, nil
+		}
+		return valuer.Value()
+	}
 	switch t.V.(type) {
 	case []string, []bool, []float32, []float64, []int, []int64, []int32:
 		value, err := pq.Array(t.V).Value()
