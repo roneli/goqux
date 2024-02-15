@@ -1,6 +1,7 @@
 package goqux
 
 import (
+	"github.com/doug-martin/goqu/v9/exp"
 	"testing"
 	"time"
 
@@ -127,7 +128,7 @@ func TestGetColumnsFromStruct(t *testing.T) {
 	tableTests := []struct {
 		name     string
 		model    interface{}
-		expected []interface{}
+		expected []exp.IdentifierExpression
 	}{
 		{
 			name: "get_columns_from_struct",
@@ -137,7 +138,7 @@ func TestGetColumnsFromStruct(t *testing.T) {
 				FieldToSkip int `goqux:"skip_select"`
 				DbOsField   int `db:"db_field"`
 			}{},
-			expected: []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("db_field")},
+			expected: []exp.IdentifierExpression{goqu.T("table").Col("int_field"), goqu.T("table").Col("db_field")},
 		},
 		{
 			name: "get_columns_from_struct_with_omitempty",
@@ -145,7 +146,7 @@ func TestGetColumnsFromStruct(t *testing.T) {
 				IntField    int `db:"int_field,omitempty"` // should not be skipped
 				StringField string
 			}{},
-			expected: []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("string_field")},
+			expected: []exp.IdentifierExpression{goqu.T("table").Col("int_field"), goqu.T("table").Col("string_field")},
 		},
 	}
 	for _, tt := range tableTests {
