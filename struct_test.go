@@ -1,11 +1,11 @@
 package goqux
 
 import (
-	"github.com/doug-martin/goqu/v9/exp"
 	"testing"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

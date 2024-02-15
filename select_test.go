@@ -1,9 +1,9 @@
 package goqux_test
 
 import (
-	"github.com/doug-martin/goqu/v9"
 	"testing"
 
+	"github.com/doug-martin/goqu/v9"
 	"github.com/roneli/goqux"
 	"github.com/stretchr/testify/assert"
 )

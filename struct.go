@@ -1,11 +1,11 @@
 package goqux
 
 import (
-	"github.com/doug-martin/goqu/v9"
 	"reflect"
 	"strings"
 	"time"
 
+	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/iancoleman/strcase"
