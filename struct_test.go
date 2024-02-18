@@ -156,3 +156,67 @@ func TestGetColumnsFromStruct(t *testing.T) {
 		})
 	}
 }
+
+type table1 struct {
+	IntField int
+}
+
+type table2 struct {
+	IntField     int
+	StringField  string `db:"cool_field"`
+	IgnoreField  string `goqux:"skip_select"`
+	privateField string
+}
+
+func Test_getSelectionFieldsFromSelectionStruct(t *testing.T) {
+	tableTests := []struct {
+		name     string
+		model    interface{}
+		expected []exp.AliasedExpression
+	}{
+		{
+			name: "get_selection_fields_from_struct",
+			model: struct {
+				Table1 table1
+				Table2 table2 `db:"table_2"`
+			}{},
+			expected: []exp.AliasedExpression{
+				goqu.T("table_1").Col("int_field").As(goqu.C("table_1.int_field")),
+				goqu.T("table_2").Col("int_field").As(goqu.C("table_2.int_field")),
+				goqu.T("table_2").Col("cool_field").As(goqu.C("table_2.cool_field"))},
+		},
+		{
+			name: "get_selection_fields_from_struct_same_table",
+			model: struct {
+				Table1      table1
+				Table1Alias table1 `db:"table_alias"`
+			}{},
+			expected: []exp.AliasedExpression{
+				goqu.T("table_1").Col("int_field").As(goqu.C("table_1.int_field")),
+				goqu.T("table_alias").Col("int_field").As(goqu.C("table_alias.int_field")),
+			},
+		},
+		{
+			name: "get_selection_fields_from_struct_unexported_column",
+			model: struct {
+				t1Private table1
+			}{},
+			expected: []exp.AliasedExpression{},
+		},
+		{
+			name: "get_selection_fields_from_non_top_level_struct",
+			model: struct {
+				IntField    int
+				FieldToSkip int `goqux:"skip_select"`
+				DbOsField   int `db:"db_field"`
+			}{},
+			expected: []exp.AliasedExpression{},
+		},
+	}
+	for _, tt := range tableTests {
+		t.Run(tt.name, func(t *testing.T) {
+			columns := getSelectionFieldsFromSelectionStruct(tt.model)
+			assert.Equal(t, tt.expected, columns)
+		})
+	}
+}

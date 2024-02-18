@@ -74,8 +74,7 @@ func WithInnerJoinSelection[T any](op ...JoinOp) SelectOption {
 		for _, c := range getSelectionFieldsFromSelectionStruct(new(T)) {
 			selectFields = append(selectFields, c)
 		}
-		s = s.Select(selectFields...)
-		return s
+		return s.Select(selectFields...)
 	}
 }
 
@@ -91,8 +90,7 @@ func WithLeftJoinSelection[T any](op ...JoinOp) SelectOption {
 		for _, c := range getSelectionFieldsFromSelectionStruct(new(T)) {
 			selectFields = append(selectFields, c)
 		}
-		s = s.Select(selectFields...)
-		return s
+		return s.Select(selectFields...)
 	}
 }
 

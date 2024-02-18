@@ -104,6 +104,9 @@ func getSelectionFieldsFromSelectionStruct(s interface{}) []exp.AliasedExpressio
 	}
 	tableFields := reflect.VisibleFields(t)
 	for _, tf := range tableFields {
+		if !tf.IsExported() {
+			continue
+		}
 		if tf.Type.Kind() != reflect.Struct && !(tf.Type.Kind() == reflect.Ptr && tf.Type.Elem().Kind() == reflect.Struct) {
 			continue
 		}
