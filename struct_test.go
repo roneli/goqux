@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,7 +128,7 @@ func TestGetColumnsFromStruct(t *testing.T) {
 	tableTests := []struct {
 		name     string
 		model    interface{}
-		expected []interface{}
+		expected []exp.IdentifierExpression
 	}{
 		{
 			name: "get_columns_from_struct",
@@ -137,7 +138,7 @@ func TestGetColumnsFromStruct(t *testing.T) {
 				FieldToSkip int `goqux:"skip_select"`
 				DbOsField   int `db:"db_field"`
 			}{},
-			expected: []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("db_field")},
+			expected: []exp.IdentifierExpression{goqu.T("table").Col("int_field"), goqu.T("table").Col("db_field")},
 		},
 		{
 			name: "get_columns_from_struct_with_omitempty",
@@ -145,12 +146,76 @@ func TestGetColumnsFromStruct(t *testing.T) {
 				IntField    int `db:"int_field,omitempty"` // should not be skipped
 				StringField string
 			}{},
-			expected: []interface{}{goqu.T("table").Col("int_field"), goqu.T("table").Col("string_field")},
+			expected: []exp.IdentifierExpression{goqu.T("table").Col("int_field"), goqu.T("table").Col("string_field")},
 		},
 	}
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
 			columns := getColumnsFromStruct(goqu.T("table"), tt.model, skipSelect)
+			assert.Equal(t, tt.expected, columns)
+		})
+	}
+}
+
+type table1 struct {
+	IntField int
+}
+
+type table2 struct {
+	IntField     int
+	StringField  string `db:"cool_field"`
+	IgnoreField  string `goqux:"skip_select"`
+	privateField string
+}
+
+func Test_getSelectionFieldsFromSelectionStruct(t *testing.T) {
+	tableTests := []struct {
+		name     string
+		model    interface{}
+		expected []exp.AliasedExpression
+	}{
+		{
+			name: "get_selection_fields_from_struct",
+			model: struct {
+				Table1 table1
+				Table2 table2 `db:"table_2"`
+			}{},
+			expected: []exp.AliasedExpression{
+				goqu.T("table_1").Col("int_field").As(goqu.C("table_1.int_field")),
+				goqu.T("table_2").Col("int_field").As(goqu.C("table_2.int_field")),
+				goqu.T("table_2").Col("cool_field").As(goqu.C("table_2.cool_field"))},
+		},
+		{
+			name: "get_selection_fields_from_struct_same_table",
+			model: struct {
+				Table1      table1
+				Table1Alias table1 `db:"table_alias"`
+			}{},
+			expected: []exp.AliasedExpression{
+				goqu.T("table_1").Col("int_field").As(goqu.C("table_1.int_field")),
+				goqu.T("table_alias").Col("int_field").As(goqu.C("table_alias.int_field")),
+			},
+		},
+		{
+			name: "get_selection_fields_from_struct_unexported_column",
+			model: struct {
+				t1Private table1
+			}{},
+			expected: []exp.AliasedExpression{},
+		},
+		{
+			name: "get_selection_fields_from_non_top_level_struct",
+			model: struct {
+				IntField    int
+				FieldToSkip int `goqux:"skip_select"`
+				DbOsField   int `db:"db_field"`
+			}{},
+			expected: []exp.AliasedExpression{},
+		},
+	}
+	for _, tt := range tableTests {
+		t.Run(tt.name, func(t *testing.T) {
+			columns := getSelectionFieldsFromSelectionStruct(tt.model)
 			assert.Equal(t, tt.expected, columns)
 		})
 	}

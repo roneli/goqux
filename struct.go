@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/iancoleman/strcase"
@@ -65,23 +66,24 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 	return values
 }
 
-func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string) []any {
+func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string) []exp.IdentifierExpression {
 	t := reflect.TypeOf(s)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
 	fields := reflect.VisibleFields(t)
-	var cols = make([]any, 0)
+	var cols = make([]exp.IdentifierExpression, 0)
 	for _, f := range fields {
 		if !f.IsExported() || strings.Contains(f.Tag.Get(tagName), skipType) {
 			continue
 		}
+		var colName string
 		if dbTag := f.Tag.Get(tagNameDb); dbTag != "" {
-			cols = append(cols, table.Col(cleanDbTag(dbTag)))
-			continue
+			colName = cleanDbTag(dbTag)
 		} else {
-			cols = append(cols, table.Col(strcase.ToSnake(f.Name)))
+			colName = strcase.ToSnake(f.Name)
 		}
+		cols = append(cols, table.Col(colName))
 	}
 	return cols
 }
@@ -92,4 +94,33 @@ func cleanDbTag(tag string) string {
 	}
 
 	return tag
+}
+
+func getSelectionFieldsFromSelectionStruct(s interface{}) []exp.AliasedExpression {
+	cols := make([]exp.AliasedExpression, 0)
+	t := reflect.TypeOf(s)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	tableFields := reflect.VisibleFields(t)
+	for _, tf := range tableFields {
+		if !tf.IsExported() {
+			continue
+		}
+		if tf.Type.Kind() != reflect.Struct && !(tf.Type.Kind() == reflect.Ptr && tf.Type.Elem().Kind() == reflect.Struct) {
+			continue
+		}
+		tableName := strcase.ToSnake(tf.Name)
+		if dbTag := tf.Tag.Get(tagNameDb); dbTag != "" {
+			tableName = cleanDbTag(dbTag)
+		}
+		subTableColumns := getColumnsFromStruct(goqu.T(tableName), reflect.New(tf.Type).Elem().Interface(), skipSelect)
+		for _, c := range subTableColumns {
+			// SELECT "table"."column" AS "table.column" will make sure dbscan scans all the columns correctly
+			cc := c.GetCol()
+			cName := tableName + "." + cc.(string)
+			cols = append(cols, goqu.T(tableName).Col(cc).As(goqu.C(cName)))
+		}
+	}
+	return cols
 }
