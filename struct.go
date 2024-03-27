@@ -29,8 +29,20 @@ const (
 	omitEmpty = ",omitempty"
 )
 
+func convertMapToSQLValuer(m map[string]any) map[string]SQLValuer {
+	values := make(map[string]SQLValuer)
+	for k, v := range m {
+		values[k] = SQLValuer{v}
+	}
+	return values
+}
+
 func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLValuer {
 	t := reflect.ValueOf(v)
+	// if we received a map we will just convert it to a map of SQLValuer
+	if t.Kind() == reflect.Map {
+		return convertMapToSQLValuer(v.(map[string]any))
+	}
 	fields := reflect.VisibleFields(t.Type())
 	values := make(map[string]SQLValuer)
 	for _, f := range fields {
