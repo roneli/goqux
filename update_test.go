@@ -58,6 +58,15 @@ func TestBuildUpdate(t *testing.T) {
 			expectedArgs:  nil,
 			expectedError: errors.New("no values to update"),
 		},
+		{
+			name: "update_with_map",
+			dst: map[string]interface{}{
+				"int_field":  5,
+				"bool_field": false,
+			},
+			expectedArgs:  []interface{}{false, int64(5)},
+			expectedQuery: `UPDATE "update_models" SET "bool_field"=$1,"int_field"=$2`,
+		},
 	}
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
