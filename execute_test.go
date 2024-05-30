@@ -20,6 +20,11 @@ type User struct {
 	Email    string
 }
 
+type randomNumbers struct {
+	ID     int64 `db:"id"`
+	Number int64 `db:"number"`
+}
+
 func TestSelectOne(t *testing.T) {
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, testPostgresURI)
@@ -201,6 +206,51 @@ func TestInsertMany(t *testing.T) {
 	}
 }
 
+func TestSelectPaginationWithManyRows(t *testing.T) {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, testPostgresURI)
+	require.Nil(t, err)
+	defer func() {
+		err := conn.Close(context.Background())
+		require.Nil(t, err)
+	}()
+	tableTests := []struct {
+		name              string
+		tableName         string
+		paginationOptions *goqux.PaginationOptions
+		options           []goqux.SelectOption
+		expectedPages     int
+	}{
+		{
+			name:      "paginated_select_keyset_with_many_rows",
+			tableName: "random_numbers",
+			paginationOptions: &goqux.PaginationOptions{
+				PageSize: 10,
+				KeySet:   []string{"ID"},
+			},
+			expectedPages: 10,
+		},
+	}
+	for _, tt := range tableTests {
+		t.Run(tt.name, func(t *testing.T) {
+			paginator, err := goqux.SelectPagination[randomNumbers](ctx, conn, tt.tableName, tt.paginationOptions, tt.options...)
+			require.Nil(t, err)
+			totalPages := 0
+			previousId := 0
+			for paginator.HasMorePages() {
+				models, err := paginator.NextPage()
+				require.Nil(t, err)
+				for _, i := range models {
+					require.Greater(t, i.ID, previousId)
+					previousId = int(i.ID)
+				}
+				totalPages += 1
+			}
+			require.GreaterOrEqual(t, totalPages, tt.expectedPages)
+		})
+	}
+}
+
 func TestSelectPagination(t *testing.T) {
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, testPostgresURI)
@@ -211,13 +261,24 @@ func TestSelectPagination(t *testing.T) {
 	}()
 	tableTests := []struct {
 		name              string
+		tableName         string
 		paginationOptions *goqux.PaginationOptions
 		options           []goqux.SelectOption
 		expectedResult    interface{}
 		expectedPages     int
 	}{
 		{
-			name: "paginated_select_single_page",
+			name:      "paginated_select_keyset_with_many_rows",
+			tableName: "random_numbers",
+			paginationOptions: &goqux.PaginationOptions{
+				PageSize: 10,
+				KeySet:   []string{"ID"},
+			},
+			expectedPages: 10,
+		},
+		{
+			name:      "paginated_select_single_page",
+			tableName: "select_users",
 			paginationOptions: &goqux.PaginationOptions{
 				PageSize: 100,
 			},
@@ -226,7 +287,8 @@ func TestSelectPagination(t *testing.T) {
 			expectedPages:  1,
 		},
 		{
-			name: "paginated_select",
+			name:      "paginated_select",
+			tableName: "select_users",
 			paginationOptions: &goqux.PaginationOptions{
 				PageSize: 1,
 			},
@@ -235,7 +297,8 @@ func TestSelectPagination(t *testing.T) {
 			expectedPages:  3,
 		},
 		{
-			name: "paginated_select_with_filters",
+			name:      "paginated_select_with_filters",
+			tableName: "select_users",
 			paginationOptions: &goqux.PaginationOptions{
 				PageSize: 1,
 			},
@@ -244,7 +307,8 @@ func TestSelectPagination(t *testing.T) {
 			expectedPages:  2,
 		},
 		{
-			name: "paginated_select_keyset",
+			name:      "paginated_select_keyset",
+			tableName: "select_users",
 			paginationOptions: &goqux.PaginationOptions{
 				PageSize: 1,
 				KeySet:   []string{"ID"},
@@ -255,7 +319,7 @@ func TestSelectPagination(t *testing.T) {
 	}
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
-			paginator, err := goqux.SelectPagination[User](ctx, conn, "select_users", tt.paginationOptions, tt.options...)
+			paginator, err := goqux.SelectPagination[User](ctx, conn, tt.tableName, tt.paginationOptions, tt.options...)
 			require.Nil(t, err)
 			allModels := make([]User, 0)
 			totalPages := 0
