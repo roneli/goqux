@@ -38,6 +38,7 @@ func WithKeySet(columns []string, values []any) SelectOption {
 			for _, c := range columns {
 				s = s.Order(table.Col(strcase.ToSnake(c)).Asc())
 			}
+			return s
 		}
 		for i, c := range columns {
 			s = s.Where(table.Col(strcase.ToSnake(c)).Gt(values[i])).Order(table.Col(strcase.ToSnake(c)).Asc())

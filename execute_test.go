@@ -273,7 +273,7 @@ func TestSelectPagination(t *testing.T) {
 	}
 }
 
-func TestStopOnPaginations(t *testing.T) {
+func TestStopOnPagination(t *testing.T) {
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, testPostgresURI)
 	require.Nil(t, err)
