@@ -236,13 +236,13 @@ func TestSelectPaginationWithManyRows(t *testing.T) {
 			paginator, err := goqux.SelectPagination[randomNumbers](ctx, conn, tt.tableName, tt.paginationOptions, tt.options...)
 			require.Nil(t, err)
 			totalPages := 0
-			previousId := 0
+			previousId := int64(0)
 			for paginator.HasMorePages() {
 				models, err := paginator.NextPage()
 				require.Nil(t, err)
 				for _, i := range models {
 					require.Greater(t, i.ID, previousId)
-					previousId = int(i.ID)
+					previousId = i.ID
 				}
 				totalPages += 1
 			}
