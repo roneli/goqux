@@ -35,7 +35,9 @@ func WithSelectOffset(offset uint) SelectOption {
 func WithKeySet(columns []string, values []any) SelectOption {
 	return func(table exp.IdentifierExpression, s *goqu.SelectDataset) *goqu.SelectDataset {
 		if values == nil {
-			return s
+			for _, c := range columns {
+				s = s.Order(table.Col(strcase.ToSnake(c)).Asc())
+			}
 		}
 		for i, c := range columns {
 			s = s.Where(table.Col(strcase.ToSnake(c)).Gt(values[i])).Order(table.Col(strcase.ToSnake(c)).Asc())
