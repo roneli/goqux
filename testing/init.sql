@@ -37,3 +37,18 @@ CREATE TABLE IF NOT EXISTS "insert_posts"
     "updated_at" TIMESTAMP    NOT NULL DEFAULT NOW(),
     "user_id"    INTEGER      NOT NULL REFERENCES "users" ("id")
 );
+-- create a table with two columns one is a serial number and another is a random number, we will then
+-- generate a series and insert 100 rows into the table
+CREATE TABLE IF NOT EXISTS "random_numbers"
+(
+    "id"         SERIAL PRIMARY KEY,
+    "number"     INTEGER      NOT NULL
+);
+
+-- Insert 100 rows into the random_numbers table
+DO $$
+BEGIN
+    FOR i IN 1..100 LOOP
+        INSERT INTO "random_numbers" ("number") VALUES (floor(random() * 1000));
+    END LOOP;
+END $$;
