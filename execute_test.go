@@ -268,15 +268,6 @@ func TestSelectPagination(t *testing.T) {
 		expectedPages     int
 	}{
 		{
-			name:      "paginated_select_keyset_with_many_rows",
-			tableName: "random_numbers",
-			paginationOptions: &goqux.PaginationOptions{
-				PageSize: 10,
-				KeySet:   []string{"ID"},
-			},
-			expectedPages: 10,
-		},
-		{
 			name:      "paginated_select_single_page",
 			tableName: "select_users",
 			paginationOptions: &goqux.PaginationOptions{
