@@ -27,16 +27,22 @@ func WithUpdateReturningAll() UpdateOption {
 	}
 }
 
+func WithUpdateSet(value any) UpdateOption {
+	return func(table exp.IdentifierExpression, s *goqu.UpdateDataset) *goqu.UpdateDataset {
+		return s.Set(value)
+	}
+}
+
 func BuildUpdate(tableName string, value any, options ...UpdateOption) (string, []any, error) {
 	table := goqu.T(tableName)
 	q := goqu.Update(table).WithDialect(defaultDialect)
-	for _, o := range options {
-		q = o(table, q)
-	}
 	values := encodeValues(value, skipUpdate, true)
 	if len(values) == 0 {
 		return "", nil, errors.New("no values to update")
 	}
 	q = q.Set(values)
+	for _, o := range options {
+		q = o(table, q)
+	}
 	return q.ToSQL()
 }

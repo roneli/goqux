@@ -38,12 +38,12 @@ func WithInsertNotPrepared() InsertOption {
 func BuildInsert(tableName string, values []any, options ...InsertOption) (string, []any, error) {
 	table := goqu.T(tableName)
 	q := goqu.Insert(table).WithDialect(defaultDialect)
-	for _, o := range options {
-		q = o(table, q)
-	}
 	encodedValues := make([]map[string]SQLValuer, len(values))
 	for i, value := range values {
 		encodedValues[i] = encodeValues(value, skipInsert, false)
+	}
+	for _, o := range options {
+		q = o(table, q)
 	}
 	return q.Rows(encodedValues).ToSQL()
 }

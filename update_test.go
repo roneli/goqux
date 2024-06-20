@@ -4,8 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/roneli/goqux"
+	"github.com/doug-martin/goqu/v9"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/roneli/goqux"
 )
 
 type updateModel struct {
@@ -66,6 +68,13 @@ func TestBuildUpdate(t *testing.T) {
 			},
 			expectedArgs:  []interface{}{false, int64(5)},
 			expectedQuery: `UPDATE "update_models" SET "bool_field"=$1,"int_field"=$2`,
+		},
+		{
+			name:          "update_omit_empty_with_custom_set",
+			dst:           updateModel{IntField: 1},
+			options:       []goqux.UpdateOption{goqux.WithUpdateSet(goqu.Record{"another_col_name_omit": "expected"})},
+			expectedArgs:  []interface{}{"expected"},
+			expectedQuery: `UPDATE "update_models" SET "another_col_name_omit"=$1`,
 		},
 	}
 	for _, tt := range tableTests {
