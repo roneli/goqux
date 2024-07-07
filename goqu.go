@@ -57,6 +57,8 @@ func (t SQLValuer) Value() (driver.Value, error) {
 			return nil, nil
 		}
 		return t.V, nil
+	case goqu.Expression:
+		return driver.Value(t.V.(goqu.Expression)), nil
 	default:
 		// if we didn't find a common type use reflection to guess if the type is of map
 		if reflect.TypeOf(t.V).Kind() == reflect.Map {

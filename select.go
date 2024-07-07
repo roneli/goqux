@@ -101,7 +101,7 @@ func BuildSelect[T any](tableName string, dst T, options ...SelectOption) (strin
 	table := goqu.T(tableName)
 	structCols := make([]any, 0)
 	for _, c := range getColumnsFromStruct(table, dst, skipSelect) {
-		structCols = append(structCols, c)
+		structCols = append(structCols, c.expression)
 	}
 	selectQuery := goqu.Dialect(defaultDialect).Select(structCols...).From(table)
 	for _, o := range options {

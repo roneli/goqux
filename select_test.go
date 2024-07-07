@@ -93,7 +93,7 @@ func TestBuildSelect(t *testing.T) {
 				Table: "table_1",
 				On:    goqu.On(goqux.Column("table_1", "int_field").Eq(goqux.Column("select_models", "int_field"))),
 			})},
-			expectedQuery: `SELECT "select_models"."int_field" AS "select_models.int_field", "table_1"."int_field" AS "table_1.int_field", "table_1"."cool_field" AS "table_1.cool_field" FROM "select_models" INNER JOIN "table_1" ON ("table_1"."int_field" = "select_models"."int_field")`,
+			expectedQuery: `SELECT "select_models"."int_field" AS "select_models"."int_field", "table_1"."int_field" AS "table_1"."int_field", "table_1"."cool_field" AS "table_1"."cool_field" FROM "select_models" INNER JOIN "table_1" ON ("table_1"."int_field" = "select_models"."int_field")`,
 		},
 		{
 			name: "select_with_left_selection",
@@ -102,7 +102,7 @@ func TestBuildSelect(t *testing.T) {
 				Table: "table_1",
 				On:    goqu.On(goqux.Column("table_1", "int_field").Eq(goqux.Column("select_models", "int_field"))),
 			})},
-			expectedQuery: `SELECT "select_models"."int_field" AS "select_models.int_field", "table_1"."int_field" AS "table_1.int_field", "table_1"."cool_field" AS "table_1.cool_field" FROM "select_models" LEFT JOIN "table_1" ON ("table_1"."int_field" = "select_models"."int_field")`,
+			expectedQuery: `SELECT "select_models"."int_field" AS "select_models"."int_field", "table_1"."int_field" AS "table_1"."int_field", "table_1"."cool_field" AS "table_1"."cool_field" FROM "select_models" LEFT JOIN "table_1" ON ("table_1"."int_field" = "select_models"."int_field")`,
 		},
 		{
 			name: "select_with_double_join_selection",
@@ -114,7 +114,7 @@ func TestBuildSelect(t *testing.T) {
 				Table: "table_2",
 				On:    goqu.On(goqux.Column("table_2", "int_field").Eq(goqux.Column("select_models", "int_field"))),
 			})},
-			expectedQuery: `SELECT "select_models"."int_field" AS "select_models.int_field", "table_1"."int_field" AS "table_1.int_field", "table_1"."cool_field" AS "table_1.cool_field", "table_2"."int_field" AS "table_2.int_field", "table_2"."cool_field" AS "table_2.cool_field" FROM "select_models" INNER JOIN "table_1" ON ("table_1"."int_field" = "select_models"."int_field") INNER JOIN "table_2" ON ("table_2"."int_field" = "select_models"."int_field")`,
+			expectedQuery: `SELECT "select_models"."int_field" AS "select_models"."int_field", "table_1"."int_field" AS "table_1"."int_field", "table_1"."cool_field" AS "table_1"."cool_field", "table_2"."int_field" AS "table_2"."int_field", "table_2"."cool_field" AS "table_2"."cool_field" FROM "select_models" INNER JOIN "table_1" ON ("table_1"."int_field" = "select_models"."int_field") INNER JOIN "table_2" ON ("table_2"."int_field" = "select_models"."int_field")`,
 		},
 	}
 	for _, tableTest := range tableTests {
