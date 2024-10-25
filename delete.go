@@ -19,6 +19,12 @@ func WithDeleteDialect(dialect string) DeleteOption {
 	}
 }
 
+func WithDeleteLimit(limit uint) DeleteOption {
+	return func(_ exp.IdentifierExpression, s *goqu.DeleteDataset) *goqu.DeleteDataset {
+		return s.Limit(limit)
+	}
+}
+
 func WithDeleteReturningAll() DeleteOption {
 	return func(table exp.IdentifierExpression, s *goqu.DeleteDataset) *goqu.DeleteDataset {
 		return s.Returning(goqu.Star())
@@ -32,4 +38,13 @@ func BuildDelete(tableName string, options ...DeleteOption) (string, []any, erro
 		deleteQuery = o(table, deleteQuery)
 	}
 	return deleteQuery.ToSQL()
+}
+
+func BuildDeleteDataset(tableName string, options ...DeleteOption) *goqu.DeleteDataset {
+	table := goqu.T(tableName)
+	deleteQuery := goqu.Delete(table).WithDialect(defaultDialect)
+	for _, o := range options {
+		deleteQuery = o(table, deleteQuery)
+	}
+	return deleteQuery
 }

@@ -124,6 +124,18 @@ func Delete[T any](ctx context.Context, querier pgxscan.Querier, tableName strin
 	return results, nil
 }
 
+func DeleteOne[T any](ctx context.Context, querier pgxscan.Querier, tableName string, options ...DeleteOption) (T, error) {
+	var result T
+	query, args, err := BuildDelete(tableName, append(options, WithDeleteLimit(1))...)
+	if err != nil {
+		return result, err
+	}
+	if err := pgxscan.Select(ctx, querier, &result, query, args...); err != nil {
+		return result, fmt.Errorf("goqux: failed to delete: %w", err)
+	}
+	return result, nil
+}
+
 func Update[T any](ctx context.Context, querier pgxscan.Querier, tableName string, updateValue any, options ...UpdateOption) ([]T, error) {
 	query, args, err := BuildUpdate(tableName, updateValue, options...)
 	if err != nil {
@@ -134,6 +146,18 @@ func Update[T any](ctx context.Context, querier pgxscan.Querier, tableName strin
 		return nil, fmt.Errorf("goqux: failed to update: %w", err)
 	}
 	return results, nil
+}
+
+func UpdateOne[T any](ctx context.Context, querier pgxscan.Querier, tableName string, updateValue any, options ...UpdateOption) (T, error) {
+	var result T
+	query, args, err := BuildUpdate(tableName, updateValue, append(options, WithUpdateLimit(1))...)
+	if err != nil {
+		return result, err
+	}
+	if err := pgxscan.Select(ctx, querier, &result, query, args...); err != nil {
+		return result, fmt.Errorf("goqux: failed to update: %w", err)
+	}
+	return result, nil
 }
 
 func Insert[T any](ctx context.Context, querier pgxscan.Querier, tableName string, insertValue any, options ...InsertOption) (*T, error) {

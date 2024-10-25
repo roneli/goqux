@@ -47,3 +47,16 @@ func BuildInsert(tableName string, values []any, options ...InsertOption) (strin
 	}
 	return q.Rows(encodedValues).ToSQL()
 }
+
+func BuildInsertDataset(tableName string, values []any, options ...InsertOption) *goqu.InsertDataset {
+	table := goqu.T(tableName)
+	q := goqu.Insert(table).WithDialect(defaultDialect)
+	encodedValues := make([]map[string]SQLValuer, len(values))
+	for i, value := range values {
+		encodedValues[i] = encodeValues(value, skipInsert, false)
+	}
+	for _, o := range options {
+		q = o(table, q)
+	}
+	return q.Rows(encodedValues)
+}

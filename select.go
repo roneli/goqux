@@ -109,3 +109,16 @@ func BuildSelect[T any](tableName string, dst T, options ...SelectOption) (strin
 	}
 	return selectQuery.ToSQL()
 }
+
+func BuildSelectDataset[T any](tableName string, dst T, options ...SelectOption) *goqu.SelectDataset {
+	table := goqu.T(tableName)
+	structCols := make([]any, 0)
+	for _, c := range getColumnsFromStruct(table, dst, skipSelect) {
+		structCols = append(structCols, c)
+	}
+	selectQuery := goqu.Dialect(defaultDialect).Select(structCols...).From(table)
+	for _, o := range options {
+		selectQuery = o(table, selectQuery)
+	}
+	return selectQuery
+}

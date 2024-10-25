@@ -21,6 +21,12 @@ func WithUpdateDialect(dialect string) UpdateOption {
 	}
 }
 
+func WithUpdateLimit(limit uint) UpdateOption {
+	return func(_ exp.IdentifierExpression, s *goqu.UpdateDataset) *goqu.UpdateDataset {
+		return s.Limit(limit)
+	}
+}
+
 func WithUpdateReturningAll() UpdateOption {
 	return func(table exp.IdentifierExpression, s *goqu.UpdateDataset) *goqu.UpdateDataset {
 		return s.Returning(goqu.Star())
@@ -45,4 +51,15 @@ func BuildUpdate(tableName string, value any, options ...UpdateOption) (string, 
 		q = o(table, q)
 	}
 	return q.ToSQL()
+}
+
+func BuildUpdateDataset(tableName string, value any, options ...UpdateOption) *goqu.UpdateDataset {
+	table := goqu.T(tableName)
+	q := goqu.Update(table).WithDialect(defaultDialect)
+	values := encodeValues(value, skipUpdate, true)
+	q = q.Set(values)
+	for _, o := range options {
+		q = o(table, q)
+	}
+	return q
 }
