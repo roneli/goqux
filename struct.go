@@ -43,6 +43,12 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 	if t.Kind() == reflect.Map {
 		return convertMapToSQLValuer(v.(map[string]any))
 	}
+
+	// if we received a pointer we will just derference it
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem() // Dereference to get the underlying type
+	}
+
 	fields := reflect.VisibleFields(t.Type())
 	values := make(map[string]SQLValuer)
 	for _, f := range fields {
