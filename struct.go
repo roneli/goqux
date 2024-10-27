@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"fmt"
 	"github.com/doug-martin/goqu/v9"
 	_ "github.com/doug-martin/goqu/v9/dialect/postgres"
 	"github.com/doug-martin/goqu/v9/exp"
@@ -86,6 +87,10 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 
 func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string) []exp.IdentifierExpression {
 	t := reflect.TypeOf(s)
+	// if we received a pointer we will just derference it
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem() // Dereference to get the underlying type
+	}
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
@@ -141,4 +146,45 @@ func getSelectionFieldsFromSelectionStruct(s interface{}) []exp.AliasedExpressio
 		}
 	}
 	return cols
+}
+
+func keysetColumns[T any](columns []string, strct T) ([]string, error) {
+	var cols []string
+	t := reflect.TypeOf(strct)
+
+	// If T is a pointer, dereference it safely
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	// Ensure `strct` is a struct
+	if t.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("T must be a struct type")
+	}
+
+	// Process each column specified
+	for _, c := range columns {
+		found := false
+		for i := 0; i < t.NumField(); i++ {
+			field := t.Field(i)
+			tagValue := field.Tag.Get("db")
+
+			// Check if the field name or "db" tag matches
+			if field.Name == c || tagValue == c {
+				found = true
+				// Always prefer a set db tag value
+				if tagValue != "" {
+					cols = append(cols, tagValue)
+				} else {
+					cols = append(cols, strcase.ToSnake(field.Name))
+				}
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("column %s not found in struct %s", c, t.Name())
+		}
+	}
+
+	return cols, nil
 }

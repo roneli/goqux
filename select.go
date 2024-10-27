@@ -3,7 +3,6 @@ package goqux
 import (
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
-	"github.com/iancoleman/strcase"
 )
 
 type SelectOption func(_ exp.IdentifierExpression, s *goqu.SelectDataset) *goqu.SelectDataset
@@ -32,17 +31,47 @@ func WithSelectOffset(offset uint) SelectOption {
 	}
 }
 
-func WithKeySet(columns []string, values []any) SelectOption {
+func WithKeySet(columns []string, values []any, desc bool) SelectOption {
 	return func(table exp.IdentifierExpression, s *goqu.SelectDataset) *goqu.SelectDataset {
+		var orderby []exp.OrderedExpression
+		var conditions []goqu.Expression
+
 		if values == nil {
 			for _, c := range columns {
-				s = s.Order(table.Col(strcase.ToSnake(c)).Asc())
+				if desc {
+					orderby = append(orderby, table.Col(c).Desc())
+					continue
+				}
+				orderby = append(orderby, table.Col(c).Asc())
 			}
-			return s
+			return s.Order(orderby...)
 		}
-		for i, c := range columns {
-			s = s.Where(table.Col(strcase.ToSnake(c)).Gt(values[i])).Order(table.Col(strcase.ToSnake(c)).Asc())
+
+		// Loop through columns to build the compound condition
+		for i := 0; i < len(columns); i++ {
+			currentConditions := make([]goqu.Expression, i+1)
+			// Add equality conditions for previous columns
+			for j := 0; j < i; j++ {
+				currentConditions[j] = table.Col(columns[j]).Eq(values[j])
+			}
+			tc := table.Col(columns[i])
+
+			// Add the "greater than" condition for the current column
+			currentConditions[i] = tc.Gt(values[i])
+
+			// Combine into an AND expression and add to the OR conditions
+			conditions = append(conditions, goqu.And(currentConditions...))
+
+			// OrderBy
+			if desc {
+				orderby = append(orderby, tc.Desc())
+				continue
+			}
+			orderby = append(orderby, tc.Asc())
 		}
+
+		s = s.Where(goqu.Or(conditions...)).Order(orderby...)
+
 		// Make sure to clear offset with KeySet pagination
 		return s.ClearOffset()
 	}

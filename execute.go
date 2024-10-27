@@ -15,6 +15,8 @@ type PaginationOptions struct {
 	// keys aren't validated, so make sure the names are correct or query will fail
 	// if KeySet isn't set, pagination will use offset instead.
 	KeySet []string
+	// By Default we use ASC
+	Desc bool
 }
 
 // PageIterator is a function that returns a page of results and a boolean indicating if there should be a next page or to stop iterating.
@@ -85,12 +87,17 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 	return NewPaginator(func(p *Paginator[T]) ([]T, bool, error) {
 		if paginationOptions.KeySet != nil {
 			//nolint:gocritic
-			options = append(originalOptions, WithKeySet(paginationOptions.KeySet, p.values))
+			cols, err := keysetColumns(paginationOptions.KeySet, new(T))
+			if err != nil {
+				return nil, false, err
+			}
+			options = append([]SelectOption{WithKeySet(cols, p.values, paginationOptions.Desc)}, originalOptions...)
+			fmt.Println("keyset:OPTS", originalOptions)
 		} else {
 			//nolint:gocritic
-			options = append(originalOptions, WithSelectOffset(p.offset))
+			options = append([]SelectOption{WithSelectOffset(p.offset)}, originalOptions...)
 		}
-		results, err := Select[T](ctx, querier, tableName, append(options, WithSelectLimit(paginationOptions.PageSize))...)
+		results, err := Select[T](ctx, querier, tableName, append([]SelectOption{WithSelectLimit(paginationOptions.PageSize)}, options...)...)
 		if err != nil {
 			return nil, false, fmt.Errorf("goqux: failed to select: %w", err)
 		}
@@ -102,7 +109,22 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 			var values = make([]any, len(results))
 			lastResult := results[len(results)-1]
 			for i, c := range paginationOptions.KeySet {
-				values[i] = reflect.ValueOf(lastResult).FieldByName(c).Interface()
+				v := reflect.ValueOf(lastResult)
+				if v.Kind() == reflect.Ptr {
+					v = v.Elem()
+				}
+				if v.Kind() != reflect.Struct {
+					return nil, false, fmt.Errorf("input is not a struct")
+				}
+				t := v.Type()
+				for z := 0; z < t.NumField(); z++ {
+					field := t.Field(z)
+					fieldValue := v.Field(z)
+					// Check if field name or db tag matches
+					if field.Name == c || field.Tag.Get("db") == c {
+						values[i] = fieldValue.Interface()
+					}
+				}
 			}
 			p.values = values
 		} else {
