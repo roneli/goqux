@@ -92,7 +92,6 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 				return nil, false, err
 			}
 			options = append([]SelectOption{WithKeySet(cols, p.values, paginationOptions.Desc)}, originalOptions...)
-			fmt.Println("keyset:OPTS", originalOptions)
 		} else {
 			//nolint:gocritic
 			options = append([]SelectOption{WithSelectOffset(p.offset)}, originalOptions...)
