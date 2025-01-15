@@ -328,6 +328,69 @@ func TestSelectPagination(t *testing.T) {
 	}
 }
 
+func TestPaginateQueryByKeySetWithEmptyKeySet(t *testing.T) {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, testPostgresURI)
+	require.Nil(t, err)
+	defer func() {
+		err := conn.Close(context.Background())
+		require.Nil(t, err)
+	}()
+	_, err = goqux.PaginateQueryByKeySet[User](ctx, conn, goqu.From("users"), 10, []string{})
+	require.Error(t, err)
+}
+
+func TestPaginateQueryByKeySetWithNoResults(t *testing.T) {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, testPostgresURI)
+	require.Nil(t, err)
+	defer func() {
+		err := conn.Close(context.Background())
+		require.Nil(t, err)
+	}()
+	paginator, err := goqux.PaginateQueryByKeySet[User](ctx, conn, goqu.Dialect("postgres").From("users").Where(goqu.C("id").Eq(999)), 10, []string{"ID"})
+	require.Nil(t, err)
+	require.NotNil(t, paginator)
+	results, err := paginator.NextPage()
+	require.Nil(t, err)
+	require.Empty(t, results)
+}
+
+func TestPaginateQueryByKeySetWithMultiplePages(t *testing.T) {
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, testPostgresURI)
+	require.NoError(t, err)
+	defer func() {
+		err := conn.Close(context.Background())
+		require.NoError(t, err)
+	}()
+	_, err = goqux.Delete[User](ctx, conn, "users")
+	require.NoError(t, err)
+	random := time.Now().Unix()
+	_, err = goqux.InsertMany[User](ctx, conn, "users", []any{
+		User{ID: random + 200, Username: "test2", Password: "test2", Email: "test2"},
+		User{ID: random + 100, Username: "test", Password: "test", Email: "test"},
+		User{ID: random + 300, Username: "test3", Password: "test3", Email: "test3"},
+	})
+	expectedUserNames := []string{"test", "test2", "test3"}
+	require.NoError(t, err)
+	paginator, err := goqux.PaginateQueryByKeySet[User](ctx, conn, goqu.Dialect("postgres").Select("id", "username").From("users"), 1, []string{"ID"})
+	require.NoError(t, err)
+	require.NotNil(t, paginator)
+	page := 0
+	for paginator.HasMorePages() {
+		u, err := paginator.NextPage()
+		require.NoError(t, err)
+		if len(u) == 0 {
+			break
+		}
+		require.Equal(t, len(u), 1)
+		require.Equal(t, u[0].Username, expectedUserNames[page])
+		page++
+	}
+	require.Equal(t, page, 3)
+}
+
 func TestStopOnPagination(t *testing.T) {
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, testPostgresURI)

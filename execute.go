@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/doug-martin/goqu/v9"
 	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/iancoleman/strcase"
 )
 
 type PaginationOptions struct {
@@ -108,6 +110,54 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 		} else {
 			p.offset += paginationOptions.PageSize
 		}
+		return results, false, nil
+	}), nil
+}
+
+func PaginateQueryByKeySet[T any](ctx context.Context, querier pgxscan.Querier, sd *goqu.SelectDataset, pageSize uint, keyset []string) (*Paginator[T], error) {
+	if len(keyset) == 0 {
+		return nil, fmt.Errorf("goqux: keyset is required for pagination")
+	}
+	paginationOptions := &PaginationOptions{
+		PageSize: pageSize,
+		KeySet:   keyset,
+	}
+	return NewPaginator(func(p *Paginator[T]) ([]T, bool, error) {
+		sd = sd.Limit(paginationOptions.PageSize).ClearOffset().ClearOrder()
+		if p.values == nil {
+			for _, c := range keyset {
+				sd = sd.OrderAppend(goqu.C(strcase.ToSnake(c)).Asc())
+			}
+		} else {
+			for i, c := range keyset {
+				sd = sd.Where(goqu.C(strcase.ToSnake(c)).Gt(p.values[i]))
+				sd = sd.OrderAppend(goqu.C(strcase.ToSnake(c)).Asc())
+			}
+		}
+
+		query, args, err := sd.ToSQL()
+		if err != nil {
+			return nil, false, fmt.Errorf("goqux: failed to build select query: %w", err)
+		}
+		rows, err := querier.Query(ctx, query, args...)
+		if err != nil {
+			return nil, false, fmt.Errorf("querier: failed to select: %w", err)
+		}
+
+		results := make([]T, 0)
+		if err := pgxscan.ScanAll(&results, rows); err != nil {
+			return nil, false, fmt.Errorf("dbscan: failed to scan: %w", err)
+		}
+		if len(results) == 0 || len(results) < int(paginationOptions.PageSize) {
+			p.hasNext = false
+			return results, false, nil
+		}
+		var values = make([]any, len(results))
+		lastResult := results[len(results)-1]
+		for i, c := range paginationOptions.KeySet {
+			values[i] = reflect.ValueOf(lastResult).FieldByName(c).Interface()
+		}
+		p.values = values
 		return results, false, nil
 	}), nil
 }
