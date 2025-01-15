@@ -74,6 +74,17 @@ for paginator.HasMorePages() {
     ...
 }
 ```
+
+for querying on any query with keyset pagination, use the `goqux.PaginateQueryByKeySet` function.
+
+```go
+paginator, err := goqux.QueryKeySetPagination[User](ctx, conn, selectDataset, 100, []string{"id"})
+for paginator.HasMorePages() {
+    users, err := paginator.NextPage()
+    ...
+}
+```
+
 ### Test Pagination Queries
 
 ```go

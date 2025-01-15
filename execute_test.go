@@ -336,7 +336,7 @@ func TestPaginateQueryByKeySetWithEmptyKeySet(t *testing.T) {
 		err := conn.Close(context.Background())
 		require.Nil(t, err)
 	}()
-	_, err = goqux.PaginateQueryByKeySet[User](ctx, conn, goqu.From("users"), 10, []string{})
+	_, err = goqux.QueryKeySetPagination[User](ctx, conn, goqu.From("users"), 10, []string{})
 	require.Error(t, err)
 }
 
@@ -348,7 +348,7 @@ func TestPaginateQueryByKeySetWithNoResults(t *testing.T) {
 		err := conn.Close(context.Background())
 		require.Nil(t, err)
 	}()
-	paginator, err := goqux.PaginateQueryByKeySet[User](ctx, conn, goqu.Dialect("postgres").From("users").Where(goqu.C("id").Eq(999)), 10, []string{"ID"})
+	paginator, err := goqux.QueryKeySetPagination[User](ctx, conn, goqu.Dialect("postgres").From("users").Where(goqu.C("id").Eq(999)), 10, []string{"ID"})
 	require.Nil(t, err)
 	require.NotNil(t, paginator)
 	results, err := paginator.NextPage()
@@ -374,7 +374,7 @@ func TestPaginateQueryByKeySetWithMultiplePages(t *testing.T) {
 	})
 	expectedUserNames := []string{"test", "test2", "test3"}
 	require.NoError(t, err)
-	paginator, err := goqux.PaginateQueryByKeySet[User](ctx, conn, goqu.Dialect("postgres").Select("id", "username").From("users"), 1, []string{"ID"})
+	paginator, err := goqux.QueryKeySetPagination[User](ctx, conn, goqu.Dialect("postgres").Select("id", "username").From("users"), 1, []string{"ID"})
 	require.NoError(t, err)
 	require.NotNil(t, paginator)
 	page := 0

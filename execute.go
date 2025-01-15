@@ -114,7 +114,8 @@ func SelectPagination[T any](ctx context.Context, querier pgxscan.Querier, table
 	}), nil
 }
 
-func PaginateQueryByKeySet[T any](ctx context.Context, querier pgxscan.Querier, sd *goqu.SelectDataset, pageSize uint, keyset []string) (*Paginator[T], error) {
+// QueryKeySetPagination is a helper function to paginate over a query using keyset pagination.
+func QueryKeySetPagination[T any](ctx context.Context, querier pgxscan.Querier, sd *goqu.SelectDataset, pageSize uint, keyset []string) (*Paginator[T], error) {
 	if len(keyset) == 0 {
 		return nil, fmt.Errorf("goqux: keyset is required for pagination")
 	}
