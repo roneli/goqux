@@ -34,14 +34,16 @@ func WithSelectOffset(offset uint) SelectOption {
 
 func WithKeySet(columns []string, values []any) SelectOption {
 	return func(table exp.IdentifierExpression, s *goqu.SelectDataset) *goqu.SelectDataset {
+		s.ClearOrder()
 		if values == nil {
 			for _, c := range columns {
-				s = s.Order(table.Col(strcase.ToSnake(c)).Asc())
+				s = s.OrderAppend(table.Col(strcase.ToSnake(c)).Asc())
 			}
 			return s
 		}
 		for i, c := range columns {
-			s = s.Where(table.Col(strcase.ToSnake(c)).Gt(values[i])).Order(table.Col(strcase.ToSnake(c)).Asc())
+			s = s.Where(table.Col(strcase.ToSnake(c)).Gt(values[i]))
+			s = s.OrderAppend(table.Col(strcase.ToSnake(c)).Asc())
 		}
 		// Make sure to clear offset with KeySet pagination
 		return s.ClearOffset()
