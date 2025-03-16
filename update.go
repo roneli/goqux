@@ -27,6 +27,16 @@ func WithUpdateReturningAll() UpdateOption {
 	}
 }
 
+func WithUpdateReturning(columns ...string) UpdateOption {
+	return func(table exp.IdentifierExpression, s *goqu.UpdateDataset) *goqu.UpdateDataset {
+		cols := make([]any, 0, len(columns))
+		for _, c := range columns {
+			cols = append(cols, table.Col(c))
+		}
+		return s.Returning(cols...)
+	}
+}
+
 func WithUpdateSet(value any) UpdateOption {
 	return func(table exp.IdentifierExpression, s *goqu.UpdateDataset) *goqu.UpdateDataset {
 		return s.Set(value)
