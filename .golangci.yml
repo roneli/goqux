@@ -1,13 +1,24 @@
 run:
   tests: true
-  skip-dirs:
+
+issues:
+  exclude-dirs:
     - bin
     - docs
     - example
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - dupl
+        - unused
 
 linters-settings:
   errcheck:
-    ignore: fmt:.*,[rR]ead|[wW]rite|[cC]lose,io:Copy
+    exclude-functions:
+      - fmt:.*
+      - "[rR]ead|[wW]rite|[cC]lose"
+      - io:Copy
 
 linters:
   disable-all: true
@@ -26,11 +37,3 @@ linters:
     - prealloc
     - unconvert
     - unused
-
-issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - dupl
-        - unused

@@ -54,6 +54,13 @@ func TestBuildUpdate(t *testing.T) {
 			expectedArgs:  []interface{}{int64(5)},
 		},
 		{
+			name:          "update_with_specific_returning",
+			dst:           updateModel{IntField: 5},
+			options:       []goqux.UpdateOption{goqux.WithUpdateReturning("int_field", "another_col_name")},
+			expectedQuery: `UPDATE "update_models" SET "int_field"=$1 RETURNING "update_models"."int_field", "update_models"."another_col_name"`,
+			expectedArgs:  []interface{}{int64(5)},
+		},
+		{
 			name:          "update_with_zero_values",
 			dst:           updateModel{IntField: 0},
 			expectedQuery: ``,
