@@ -101,6 +101,69 @@ func TestEncodeValues(t *testing.T) {
 			skipFlag:       skipInsert,
 			skipZeroValues: false,
 		},
+		{
+			name: "encode_omitnil_nil",
+			model: struct {
+				PtrField *int `db:"ptr_field,omitnil"`
+			}{PtrField: nil},
+			values:         map[string]SQLValuer{},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_omitnil_non_nil",
+			model: struct {
+				PtrField *int `db:"ptr_field,omitnil"`
+			}{PtrField: new(int)},
+			values:         map[string]SQLValuer{"ptr_field": {new(int)}},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_omitnil_and_omitempty",
+			model: struct {
+				PtrField *int `db:"ptr_field,omitnil,omitempty"`
+			}{PtrField: new(int)},
+			values:         map[string]SQLValuer{"ptr_field": {new(int)}},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_only_omitempty",
+			model: struct {
+				Field int `db:"omitempty"`
+			}{Field: 0},
+			values:         map[string]SQLValuer{},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_only_omitnil",
+			model: struct {
+				Field *int `db:"omitnil"`
+			}{Field: nil},
+			values:         map[string]SQLValuer{},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_omitnil_prefix",
+			model: struct {
+				Field *int `db:"omitnil,field_name"`
+			}{Field: nil},
+			values:         map[string]SQLValuer{},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
+		{
+			name: "encode_omitempty_suffix",
+			model: struct {
+				Field int `db:"field_name,omitempty"`
+			}{Field: 0},
+			values:         map[string]SQLValuer{},
+			skipFlag:       skipInsert,
+			skipZeroValues: false,
+		},
 	}
 	for _, tt := range tableTests {
 		t.Run(tt.name, func(t *testing.T) {
