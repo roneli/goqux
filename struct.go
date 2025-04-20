@@ -1,6 +1,7 @@
 package goqux
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -26,7 +27,9 @@ const (
 	// Same as default now but will inject time.Now().UTC()
 	defaultNowUtc = "now_utc"
 	// omitempty will skip the field if it is zero value
-	omitEmpty = ",omitempty"
+	omitEmpty = "omitempty"
+	// omitnil will skip the field if it is nil
+	omitNil = "omitnil"
 )
 
 func convertMapToSQLValuer(m map[string]any) map[string]SQLValuer {
@@ -58,10 +61,16 @@ func encodeValues(v any, skipType string, skipZeroValues bool) map[string]SQLVal
 		columnName := strcase.ToSnake(f.Name)
 		if dbTag := f.Tag.Get(tagNameDb); dbTag != "" {
 			if strings.Contains(dbTag, omitEmpty) {
-				if value.IsZero() {
+				if !value.IsValid() || value.IsZero() { // IsZero panic on valid values
 					continue
 				}
-				dbTag = cleanDbTag(dbTag)
+				dbTag = cleanDbTag(dbTag, omitEmpty)
+			}
+			if strings.Contains(dbTag, omitNil) {
+				if value.IsNil() {
+					continue
+				}
+				dbTag = cleanDbTag(dbTag, omitNil)
 			}
 			columnName = dbTag
 		}
@@ -91,7 +100,7 @@ func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string
 		}
 		var colName string
 		if dbTag := f.Tag.Get(tagNameDb); dbTag != "" {
-			colName = cleanDbTag(dbTag)
+			colName = cleanDbTag(dbTag, omitEmpty, omitNil)
 		} else {
 			colName = strcase.ToSnake(f.Name)
 		}
@@ -100,10 +109,31 @@ func getColumnsFromStruct(table exp.IdentifierExpression, s any, skipType string
 	return cols
 }
 
-func cleanDbTag(tag string) string {
-	if strings.Contains(tag, omitEmpty) {
-		tag = strings.ReplaceAll(tag, omitEmpty, "")
+func cleanDbTag(tag string, tagsToClean ...string) string {
+	for _, tagToClean := range tagsToClean {
+		// Handle case where tag is just the partToClean
+		if tag == tagToClean {
+			return ""
+		}
+
+		// Handle case where tag starts with partToClean
+		if strings.HasPrefix(tag, fmt.Sprintf("%s,", tagToClean)) {
+			tag = strings.TrimPrefix(tag, fmt.Sprintf("%s,", tagToClean))
+		}
+
+		// Handle case where tag ends with partToClean
+		if strings.HasSuffix(tag, fmt.Sprintf(",%s", tagToClean)) {
+			tag = strings.TrimSuffix(tag, fmt.Sprintf(",%s", tagToClean))
+		}
+
+		// Handle case where tagToClean tag is in the middle
+		if strings.Contains(tag, fmt.Sprintf(",%s,", tagToClean)) {
+			tag = strings.ReplaceAll(tag, fmt.Sprintf(",%s,", tagToClean), ",")
+		}
 	}
+
+	// Clean up any remaining commas
+	tag = strings.Trim(tag, ",")
 
 	return tag
 }
